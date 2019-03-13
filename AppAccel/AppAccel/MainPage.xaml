@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:AppAccel"
+             xmlns:oxy="clr-namespace:OxyPlot.Xamarin.Forms;assembly=OxyPlot.Xamarin.Forms"
+             x:Class="AppAccel.MainPage">
+    <Grid Margin="5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Button Text="Start Monitoring" BackgroundColor="White" BorderColor="#039BE5" BorderWidth="2" BorderRadius="10" Command="{Binding ControlCommand}" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2"/>
+        <Label Text="Accelerometer Vector" HorizontalOptions="Start" VerticalOptions="CenterAndExpand" Grid.Column="0" Grid.Row="1"/>
+        <Label Text="Vector Lendth" HorizontalOptions="Start" VerticalOptions="CenterAndExpand" Grid.Column="1" Grid.Row="1"/>
+        <Label Text="{Binding XYZ}" HorizontalOptions="Start" VerticalOptions="CenterAndExpand" Grid.Column="0" Grid.Row="2"/>
+        <Label Text="{Binding Vector}" HorizontalOptions="Start" VerticalOptions="CenterAndExpand" Grid.Column="1" Grid.Row="2"/>
+        <oxy:PlotView Model="{Binding Model}" Grid.Column="0" Grid.Row="3" Grid.ColumnSpan="2"/>
+    </Grid>
+</ContentPage>
