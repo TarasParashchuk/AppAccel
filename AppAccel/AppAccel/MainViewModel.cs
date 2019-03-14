@@ -20,7 +20,7 @@ namespace AppAccel
         int delta_time = 10000;
 
         PlotModel _plotModel;
-        LineSeries areaSerie;
+        AreaSeries areaSerie;
         DateTimeAxis TimeAxis;
 
         public PlotModel Model
@@ -94,7 +94,7 @@ namespace AppAccel
             Model.Axes.Add(TimeAxis);
             Model.Axes.Add(new LinearAxis { Position = AxisPosition.Left, Minimum = 0, Maximum = 10, StartPosition = 0, AbsoluteMinimum = 0 });
             
-            areaSerie = new LineSeries
+            areaSerie = new AreaSeries
             {
                 StrokeThickness = 1.0
             };
