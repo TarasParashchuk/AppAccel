@@ -1,4 +1,5 @@
 ﻿using OxyPlot;
+using OxyPlot.Axes;
 using OxyPlot.Series;
 using System;
 using System.ComponentModel;
@@ -10,49 +11,34 @@ namespace AppAccel
 {
     class MainViewModel : INotifyPropertyChanged
     {
-        public event PropertyChangedEventHandler PropertyChanged;
-        public AccelerometerValue AccelerometerValue;
-        private float X;
-        private float Y;
-        private float Z;
-        private LineSeries series1;
-        private PlotModel Plot;
-        private int i = 0;
+        AccelerometerValue AccelerometerValue;
+        float X;
+        float Y;
+        float Z;
 
-        public PlotModel Model { get; private set; }
+        long time;
+        int delta_time = 10000;
 
-        public MainViewModel()
+        PlotModel _plotModel;
+        LineSeries areaSerie;
+        DateTimeAxis TimeAxis;
+
+        public PlotModel Model
         {
-            AccelerometerValue = new AccelerometerValue();
-
-            Plot = new PlotModel ();
-            series1 = new LineSeries { Title = "Series 1", MarkerType = MarkerType.Circle };
-            Plot.Series.Add(series1);
-            this.Model = Plot;
-            Accelerometer.ReadingChanged += Accelerometer_ReadingChanged;
+            get { return _plotModel; }
+            set
+            {
+                _plotModel = value;
+                OnPropertyChanged("Model");
+            }
         }
 
-        private void Accelerometer_ReadingChanged(object sender, AccelerometerChangedEventArgs e)
-        {
-            
-            var data = e.Reading;
-            X = data.Acceleration.X;
-            Y = data.Acceleration.Y;
-            Z = data.Acceleration.Z;
-            Vector = Math.Sqrt(Math.Pow(Convert.ToDouble(X), 2) + Math.Pow(Convert.ToDouble(Y), 2) + Math.Pow(Convert.ToDouble(Z), 2));
-            XYZ = $"x = {String.Format("{0:0.00}", X * 10)}, " +
-                $"y = {String.Format("{0:0.00}", Y * 10)}, " +
-                $"z = {String.Format("{0:0.00}", Z * 10)}";
-            series1.Points.Add(new DataPoint(i++, Vector));
-            
-        }
-        
         public string XYZ
         {
             get => AccelerometerValue.XYZ;
             set
             {
-                if(AccelerometerValue.XYZ != value)
+                if (AccelerometerValue.XYZ != value)
                 {
                     AccelerometerValue.XYZ = value;
                     OnPropertyChanged("XYZ");
@@ -72,22 +58,89 @@ namespace AppAccel
                 }
             }
         }
-        
+
         public ICommand ControlCommand
         {
-            get => new Command(() => 
+            get => new Command(() =>
             {
                 if (Accelerometer.IsMonitoring)
                     Accelerometer.Stop();
                 else
+                {
                     Accelerometer.Start(SensorSpeed.UI);
+                    time = GetTime();
+                }
             });
         }
 
+        public event PropertyChangedEventHandler PropertyChanged;
         private void OnPropertyChanged(string name)
         {
             if (PropertyChanged != null)
                 PropertyChanged(this, new PropertyChangedEventArgs(name));
+        }
+
+
+        public MainViewModel()
+        {
+            AccelerometerValue = new AccelerometerValue();
+
+            Model = new PlotModel();
+
+            var minValue = DateTimeAxis.ToDouble(DateTime.Now);
+            var maxValue = DateTimeAxis.ToDouble(DateTime.Now.AddSeconds(3));
+
+            TimeAxis = new DateTimeAxis { Position = AxisPosition.Bottom, Minimum = minValue, Maximum = maxValue, StringFormat = "HH:mm:ss" };
+            Model.Axes.Add(TimeAxis);
+            Model.Axes.Add(new LinearAxis { Position = AxisPosition.Left, Minimum = 0, Maximum = 10, StartPosition = 0, AbsoluteMinimum = 0 });
+            
+            areaSerie = new LineSeries
+            {
+                StrokeThickness = 1.0
+            };
+
+            Model.Series.Add(areaSerie);
+
+            Accelerometer.ReadingChanged += Accelerometer_ReadingChanged;
+        }
+
+        private void Accelerometer_ReadingChanged(object sender, AccelerometerChangedEventArgs e)
+        {
+            lock (this.Model.SyncRoot)
+            {
+                this.Update(e.Reading);
+            }
+            
+            Model.InvalidatePlot(true);
+        }
+
+        private void Update(AccelerometerData data)
+        {
+            X = data.Acceleration.X;
+            Y = data.Acceleration.Y;
+            Z = data.Acceleration.Z;
+            Vector = Math.Sqrt(Math.Pow(Convert.ToDouble(X), 2) + Math.Pow(Convert.ToDouble(Y), 2) + Math.Pow(Convert.ToDouble(Z), 2));
+            XYZ = $"x = {String.Format("{0:0.00}", X * 10)}, " +
+                $"y = {String.Format("{0:0.00}", Y * 10)}, " +
+                $"z = {String.Format("{0:0.00}", Z * 10)}";
+
+            if (GetTime() - time < delta_time)
+            {
+                areaSerie.Points.Add(new DataPoint(DateTimeAxis.ToDouble(DateTime.Now), Vector));
+            }
+            else
+            {
+                areaSerie.Points.RemoveRange(0, 2);
+                delta_time = 100;
+                time = GetTime();
+            }
+            TimeAxis.Minimum = DateTimeAxis.ToDouble(DateTime.Now.AddSeconds(-3));
+            TimeAxis.Maximum = DateTimeAxis.ToDouble(DateTime.Now.AddSeconds(3));
+        }
+
+        private long GetTime()
+        {
+            return DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
         }
     }
 }
